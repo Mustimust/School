@@ -1,28 +1,28 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Resources:
-  ASASG3TZN3:
+  ASGV1:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       AutoScalingGroupName: !Sub '${EnvironmentName}-ASG'
       TargetGroupARNs:
-        - !Ref ELBV2TG2D170
+        - !Ref ELBV2TG1
       LaunchTemplate: 
         LaunchTemplateName: "Web-Server-Template"
         Version: 1
       DesiredCapacity: 2
       MinSize: 2
-      MaxSize: 2
+      MaxSize: 5
       HealthCheckGracePeriod: 300
       VPCZoneIdentifier:
-        - !Ref Subnet1
-        - !Ref Subnet2
-        - !Ref Subnet3
+        - !Ref SUB1
+        - !Ref SUB2
+        - !Ref SUB3
 
-  EC2SG2ZP0H:
+  EC2SG1:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Allow http to client host
+      GroupDescription: Allow HTTP:80 to client
       VpcId:
         Ref: MyVPC
       SecurityGroupIngress:
@@ -36,17 +36,17 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
 
-  ELBV2L1S0P1:
+  ELBV2L1:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
-      LoadBalancerArn: !Ref ELBV2LB1UKYY
+      LoadBalancerArn: !Ref ELBV2LB1
       Port: 80
       Protocol: HTTP
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref ELBV2TG2D170
+          TargetGroupArn: !Ref ELBV2TG1
 
-  ELBV2LB1UKYY:
+  ELBV2LB1:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
       Name: !Sub '${EnvironmentName}-ELB'
@@ -55,11 +55,11 @@ Resources:
       Type: application
       Subnets:
         - !Ref AZ1
-        - !Ref Subnet3
+        - !Ref SUB3
       SecurityGroups:
-        - !Ref EC2SG2ZP0H
+        - !Ref EC2SG1
 
-  ELBV2TG2D170:
+  ELBV2TG1:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
       HealthCheckIntervalSeconds: 30
@@ -78,23 +78,23 @@ Resources:
 
 Parameters:
   EnvironmentName:
-    Description: Enter Environment Name. NO CAPS
+    Description: NO CAPS IN ENVIRONMENT NAME
     Default: musti
     Type: String
     AllowedPattern: '[a-z0-9]*$'
-  Subnet1:
+  SUB1:
     Default: subnet-09289953
     Description: Select Subnet
     AllowedValues:
       - subnet-09289953
     Type: String
-  Subnet2:
+  SUB2:
     Default: subnet-3a64135c
     AllowedValues:
       - subnet-3a64135c
     Description: Select Subnet
     Type: String
-  Subnet3:
+  SUB3:
     Default: subnet-d626609e
     Description: Select Subnet
     AllowedValues:
