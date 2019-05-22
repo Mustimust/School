@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Resources:
+  ASASG3TZN3:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AutoScalingGroupName: !Sub '${EnvironmentName}-ASG'
+      TargetGroupARNs:
+        - !Ref ELBV2TG2D170
+      LaunchTemplate: 
+        LaunchTemplateName: "Web-Server-Template"
+        Version: 1
+      DesiredCapacity: 2
+      MinSize: 2
+      MaxSize: 2
+      HealthCheckGracePeriod: 300
+      VPCZoneIdentifier:
+        - !Ref Subnet1
+        - !Ref Subnet2
+        - !Ref Subnet3
+
+  EC2SG2ZP0H:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+  ELBV2L1S0P1:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      LoadBalancerArn: !Ref ELBV2LB1UKYY
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ELBV2TG2D170
+
+  ELBV2LB1UKYY:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Name: !Sub '${EnvironmentName}-ELB'
+      Scheme: internet-facing
+      IpAddressType: ipv4
+      Type: application
+      Subnets:
+        - !Ref AZ1
+        - !Ref Subnet3
+      SecurityGroups:
+        - !Ref EC2SG2ZP0H
+
+  ELBV2TG2D170:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: '200'
+      Name: !Sub '${EnvironmentName}-ELB-TG'
+      Port: 80
+      Protocol: HTTP
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref MyVPC
+
+Parameters:
+  EnvironmentName:
+    Description: Enter Environment Name. NO CAPS
+    Default: musti
+    Type: String
+    AllowedPattern: '[a-z0-9]*$'
+  Subnet1:
+    Default: subnet-09289953
+    Description: Select Subnet
+    AllowedValues:
+      - subnet-09289953
+    Type: String
+  Subnet2:
+    Default: subnet-3a64135c
+    AllowedValues:
+      - subnet-3a64135c
+    Description: Select Subnet
+    Type: String
+  Subnet3:
+    Default: subnet-d626609e
+    Description: Select Subnet
+    AllowedValues:
+      - subnet-d626609e
+    Type: String
+  KeyName:
+    Description: Select SSH Key.
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Default: MyLabLoginKey
+  AZ1:
+    Default: subnet-09289953
+    Description: Select Subnet
+    Type: 'AWS::EC2::Subnet::Id'
+  MyVPC:
+    Default: vpc-9fcef4f9
+    Description: Select VPC.
+    Type: 'AWS::EC2::VPC::Id'
